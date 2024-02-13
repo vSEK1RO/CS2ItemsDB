@@ -24,6 +24,7 @@ class ItemMapper {
         tradable = entity.tradable,
         type = entity.type,
         commodity = entity.commodity,
+        marketTradableRestriction = entity.marketTradableRestriction,
         descriptions = entity.descriptions,
     )
 

@@ -35,6 +35,9 @@ class ItemEntity(
     @Column(name = "commodity", nullable = true)
     var commodity: Boolean? = null,
 
+    @Column(name = "market_tradable_restriction", nullable = true)
+    var marketTradableRestriction: Long? = null,
+
     @Column(name = "descriptions", nullable = true, columnDefinition = "TEXT")
     var descriptions: String? = null,
 ) : AbstractEntity()

@@ -16,5 +16,6 @@ class ItemResponse(
     var tradable: Boolean? = null,
     var type: String? = null,
     var commodity: Boolean? = null,
+    var marketTradableRestriction: Long? = null,
     var descriptions: String? = null,
 ) : EntityResponse
