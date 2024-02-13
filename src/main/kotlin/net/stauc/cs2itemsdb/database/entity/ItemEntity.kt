@@ -2,8 +2,10 @@ package net.stauc.cs2itemsdb.database.entity
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.Table
 
 @Entity
+@Table(name = "items")
 class ItemEntity(
     @Column(name = "hash_name", columnDefinition = "TEXT")
     var hashName: String,
