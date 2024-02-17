@@ -1,12 +1,15 @@
 package net.stauc.cs2itemsdb.database.entity
 
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.Table
+import jakarta.persistence.*
+import java.time.LocalDateTime
 
 @Entity
 @Table(name = "items")
 class ItemEntity(
+
+    @Column(name = "updated_at", nullable = false)
+    var updatedAt: LocalDateTime = LocalDateTime.now(),
+
     @Column(name = "hash_name", columnDefinition = "TEXT")
     var hashName: String,
 
@@ -29,18 +32,16 @@ class ItemEntity(
     var instanceid: Long? = null,
 
     @Column(name = "tradable", nullable = true)
-    var tradable: Boolean? = null,
+    var tradable: Long? = null,
 
     @Column(name = "type", nullable = true, columnDefinition = "TEXT")
     var type: String? = null,
 
     @Column(name = "commodity", nullable = true)
-    var commodity: Boolean? = null,
+    var commodity: Long? = null,
 
     @Column(name = "market_tradable_restriction", nullable = true)
     var marketTradableRestriction: Long? = null,
 
-    @Column(name = "descriptions", nullable = true, columnDefinition = "TEXT")
-    var descriptions: String? = null,
 ) : AbstractEntity()
 

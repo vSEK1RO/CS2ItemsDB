@@ -1,11 +1,12 @@
 package net.stauc.cs2itemsdb.model.response
 
 import jakarta.persistence.Column
+import kotlinx.serialization.json.long
 import java.time.LocalDateTime
 
 class ItemResponse(
     override val id: Long,
-    override val updatedAt: LocalDateTime,
+    val updatedAt: LocalDateTime,
     val hashName: String,
     var sellListings: Long? = null,
     var sellPriceText: String? = null,
@@ -13,9 +14,8 @@ class ItemResponse(
     var appid: Long? = null,
     var classid: Long? = null,
     var instanceid: Long? = null,
-    var tradable: Boolean? = null,
+    var tradable: Long? = null,
     var type: String? = null,
-    var commodity: Boolean? = null,
+    var commodity: Long? = null,
     var marketTradableRestriction: Long? = null,
-    var descriptions: String? = null,
 ) : EntityResponse

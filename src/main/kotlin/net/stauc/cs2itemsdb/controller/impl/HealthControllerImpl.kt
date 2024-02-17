@@ -7,6 +7,6 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class HealthControllerImpl : HealthController {
-    @GetMapping("/health")
+    @GetMapping("/HealthService")
     override fun health() = HealthMessage()
 }

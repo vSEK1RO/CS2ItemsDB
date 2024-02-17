@@ -25,8 +25,9 @@ class ItemMapper {
         type = entity.type,
         commodity = entity.commodity,
         marketTradableRestriction = entity.marketTradableRestriction,
-        descriptions = entity.descriptions,
     )
 
-    fun asListResponse(items: Iterable<ItemEntity>) = items.map { asResponse(it) }
+    fun asListResponse(items: Iterable<ItemEntity>) : List<ItemResponse>{
+        return items.map { asResponse(it) }
+    }
 }

@@ -4,5 +4,4 @@ import java.time.LocalDateTime
 
 interface EntityResponse {
     val id: Long
-    val updatedAt: LocalDateTime
 }
