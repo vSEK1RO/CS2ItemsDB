@@ -5,10 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
 import jakarta.annotation.PostConstruct
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import net.stauc.cs2itemsdb.database.dao.ItemDao
@@ -37,70 +34,72 @@ class ParserComponent(
         this.start()
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun run() {
         runBlocking {
             var oldestUpdatedId = dao.findOldestUpdated()?.sortByNameId ?: 0
-            var totalCount = 0
-            var requestCounter = 0
-            var job = launch{}
+            var totalCount = 20936
+            val coroutineMax = 5
+            var coroutineCounter = 0
             while(true){
-                job = launch(Dispatchers.Default.limitedParallelism(20)) {
-                    val url = URL(
-                            "https://steamcommunity.com/market/search/render/?start=$oldestUpdatedId" +
-                                    "&count=100&search_descriptions=0&sort_column=name&sort_dir=desc&norender=1&appid=730&currency=1"
-                    )
-                    var res = ""
-                    val connection = url.openConnection()
-                    try{
-                        BufferedReader(InputStreamReader(connection.getInputStream())).use { inp ->
-                            var line: String?
-                            while (inp.readLine().also { line = it } != null) {
-                                res += line
+                coroutineCounter = 0
+                val request = launch {
+                    while (coroutineCounter < coroutineMax) {
+                        coroutineCounter++
+                        val oldestLaunch = oldestUpdatedId
+                        launch {
+                            val url = URL(
+                                    "https://steamcommunity.com/market/search/render/?start=$oldestLaunch" +
+                                            "&count=100&search_descriptions=0&sort_column=name&sort_dir=desc&norender=1&appid=730&currency=1"
+                            )
+                            var res = ""
+                            val connection = url.openConnection()
+                            try{
+                                BufferedReader(InputStreamReader(connection.getInputStream())).use { inp ->
+                                    var line: String?
+                                    while (inp.readLine().also { line = it } != null) {
+                                        res += line
+                                    }
+                                }
+                            }catch (e: IOException){
+                                coroutineCounter=coroutineMax
+                                return@launch
+                            }
+                            totalCount=Json.parseToJsonElement(res).jsonObject["total_count"]?.jsonPrimitive?.int ?: 0
+                            val requestStart=Json.parseToJsonElement(res).jsonObject["start"]?.jsonPrimitive?.long ?: 0
+                            println("${LocalDateTime.now()} current request start=$requestStart | $totalCount")
+                            val results = Json.parseToJsonElement(res).jsonObject["results"]?.jsonArray ?: buildJsonArray {}
+                            for(i in 0..<results.size){
+                                val item = results.get(i).jsonObject ?: break
+                                val asset_description = item["asset_description"]?.jsonObject ?: break
+                                val entity = ItemEntity(
+                                    updatedAt = LocalDateTime.now(),
+                                    hashName = item["hash_name"]?.jsonPrimitive.toString().replace(Regex("^\"|\"$"), ""),
+                                    sortByNameId = requestStart+i,
+                                    sellListings = item["sell_listings"]?.jsonPrimitive?.long,
+                                    sellPriceText = item["sell_price_text"]?.jsonPrimitive.toString().replace(Regex("^\"|\"$"), ""),
+                                    salePriceText = item["sale_price_text"]?.jsonPrimitive.toString().replace(Regex("^\"|\"$"), ""),
+                                    appid = asset_description["appid"]?.jsonPrimitive?.long,
+                                    classid = asset_description["classid"]?.jsonPrimitive?.long,
+                                    instanceid = asset_description["instanceid"]?.jsonPrimitive?.long,
+                                    tradable = asset_description["tradable"]?.jsonPrimitive?.long,
+                                    type = asset_description["type"]?.jsonPrimitive.toString().replace(Regex("^\"|\"$"), ""),
+                                    commodity = asset_description["commodity"]?.jsonPrimitive?.long,
+                                    marketTradableRestriction = asset_description["market_tradable_restriction"]?.jsonPrimitive?.long,
+                                )
+                                entity.id = dao.findByHashName(entity.hashName)?.id ?: 0
+                                dao.save(entity)
                             }
                         }
-                    }catch (e: IOException){
-                        println(e)
-                        requestCounter=20
-                        return@launch
-                    }
-                    totalCount=Json.parseToJsonElement(res).jsonObject["total_count"]?.jsonPrimitive?.int ?: 0
-                    val requestStart=Json.parseToJsonElement(res).jsonObject["start"]?.jsonPrimitive?.long ?: 0
-                    println("${LocalDateTime.now()} current request start=$requestStart")
-                    val results = Json.parseToJsonElement(res).jsonObject["results"]?.jsonArray ?: buildJsonArray {}
-                    for(i in 0..<results.size){
-                        val item = results.get(i).jsonObject ?: break
-                        val asset_description = item["asset_description"]?.jsonObject ?: break
-                        val entity = ItemEntity(
-                            updatedAt = LocalDateTime.now(),
-                            hashName = item["hash_name"]?.jsonPrimitive.toString().replace(Regex("^\"|\"$"), ""),
-                            sortByNameId = requestStart+i,
-                            sellListings = item["sell_listings"]?.jsonPrimitive?.long,
-                            sellPriceText = item["sell_price_text"]?.jsonPrimitive.toString().replace(Regex("^\"|\"$"), ""),
-                            salePriceText = item["sale_price_text"]?.jsonPrimitive.toString().replace(Regex("^\"|\"$"), ""),
-                            appid = asset_description["appid"]?.jsonPrimitive?.long,
-                            classid = asset_description["classid"]?.jsonPrimitive?.long,
-                            instanceid = asset_description["instanceid"]?.jsonPrimitive?.long,
-                            tradable = asset_description["tradable"]?.jsonPrimitive?.long,
-                            type = asset_description["type"]?.jsonPrimitive.toString().replace(Regex("^\"|\"$"), ""),
-                            commodity = asset_description["commodity"]?.jsonPrimitive?.long,
-                            marketTradableRestriction = asset_description["market_tradable_restriction"]?.jsonPrimitive?.long,
-                        )
-                        entity.id = dao.findByHashName(entity.hashName)?.id ?: 0
-                        dao.save(entity)
+                        oldestUpdatedId += 100
+                        if (oldestUpdatedId > totalCount - 100) {
+                            oldestUpdatedId = 0
+                        }
                     }
                 }
-                requestCounter++
-                if(requestCounter>=20){
-                    job.join()
-                    println("${LocalDateTime.now()} waiting for 60 seconds ...")
-                    Thread.sleep(60000)
-                    requestCounter=0
-                }
-                if(oldestUpdatedId>totalCount-100){
-                    oldestUpdatedId = 0
-                }else{
-                    oldestUpdatedId += 100
-                }
+                request.join()
+                println("${LocalDateTime.now()} waiting for 60 seconds ...")
+                Thread.sleep(60000)
             }
         }
     }
