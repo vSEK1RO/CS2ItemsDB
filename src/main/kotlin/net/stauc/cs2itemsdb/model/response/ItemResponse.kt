@@ -8,7 +8,6 @@ class ItemResponse(
     override val id: Long,
     val updatedAt: LocalDateTime,
     val hashName: String,
-    val sortByNameId: Long,
     var sellListings: Long? = null,
     var sellPriceText: String? = null,
     var salePriceText: String? = null,

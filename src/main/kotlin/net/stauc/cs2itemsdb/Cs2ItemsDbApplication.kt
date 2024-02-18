@@ -37,9 +37,9 @@ class ParserComponent(
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun run() {
         runBlocking {
-            var oldestUpdatedId = dao.findOldestUpdated()?.sortByNameId ?: 0
+            var oldestUpdatedId = 0
             var totalCount = 20936
-            val coroutineMax = 5
+            val coroutineMax = 20
             var coroutineCounter = 0
             while(true){
                 coroutineCounter = 0
@@ -50,9 +50,10 @@ class ParserComponent(
                         launch {
                             val url = URL(
                                     "https://steamcommunity.com/market/search/render/?start=$oldestLaunch" +
-                                            "&count=100&search_descriptions=0&sort_column=name&sort_dir=desc&norender=1&appid=730&currency=1"
+                                            "&count=100&search_descriptions=0&sort_column=popular&sort_dir=desc&norender=1&appid=730&currency=1"
                             )
                             var res = ""
+                            println("${LocalDateTime.now()} sent request start=$oldestLaunch")
                             val connection = url.openConnection()
                             try{
                                 BufferedReader(InputStreamReader(connection.getInputStream())).use { inp ->
@@ -67,7 +68,7 @@ class ParserComponent(
                             }
                             totalCount=Json.parseToJsonElement(res).jsonObject["total_count"]?.jsonPrimitive?.int ?: 0
                             val requestStart=Json.parseToJsonElement(res).jsonObject["start"]?.jsonPrimitive?.long ?: 0
-                            println("${LocalDateTime.now()} current request start=$requestStart | $totalCount")
+                            println("${LocalDateTime.now()} caught response start=$requestStart | $totalCount")
                             val results = Json.parseToJsonElement(res).jsonObject["results"]?.jsonArray ?: buildJsonArray {}
                             for(i in 0..<results.size){
                                 val item = results.get(i).jsonObject ?: break
@@ -75,7 +76,6 @@ class ParserComponent(
                                 val entity = ItemEntity(
                                     updatedAt = LocalDateTime.now(),
                                     hashName = item["hash_name"]?.jsonPrimitive.toString().replace(Regex("^\"|\"$"), ""),
-                                    sortByNameId = requestStart+i,
                                     sellListings = item["sell_listings"]?.jsonPrimitive?.long,
                                     sellPriceText = item["sell_price_text"]?.jsonPrimitive.toString().replace(Regex("^\"|\"$"), ""),
                                     salePriceText = item["sale_price_text"]?.jsonPrimitive.toString().replace(Regex("^\"|\"$"), ""),

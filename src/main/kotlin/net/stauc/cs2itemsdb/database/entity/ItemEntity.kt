@@ -13,9 +13,6 @@ class ItemEntity(
     @Column(name = "hash_name", columnDefinition = "TEXT")
     var hashName: String,
 
-    @Column(name = "sort_by_name_id", nullable = false)
-    var sortByNameId: Long,
-
     @Column(name = "sell_listings", nullable = true)
     var sellListings: Long? = null,
 

@@ -9,14 +9,12 @@ import org.springframework.stereotype.Component
 class ItemMapper {
     fun asEntity(request: ItemRequest) = ItemEntity(
         hashName = request.hashName,
-        sortByNameId = 0,
     )
 
     fun asResponse(entity: ItemEntity) = ItemResponse(
         id = entity.id,
         updatedAt = entity.updatedAt,
         hashName = entity.hashName,
-        sortByNameId = entity.sortByNameId,
         sellListings = entity.sellListings,
         sellPriceText = entity.sellPriceText,
         salePriceText = entity.salePriceText,
