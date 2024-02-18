@@ -39,7 +39,7 @@ class ParserComponent(
         runBlocking {
             var oldestUpdatedId = 0
             var totalCount = 20936
-            val coroutineMax = 20
+            val coroutineMax = 25
             var coroutineCounter = 0
             while(true){
                 coroutineCounter = 0
@@ -64,11 +64,14 @@ class ParserComponent(
                                 }
                             }catch (e: IOException){
                                 coroutineCounter=coroutineMax
+                                println("${LocalDateTime.now()}  caught response $e")
+                                println("${LocalDateTime.now()}  waiting for 60 seconds ...")
+                                Thread.sleep(60000)
                                 return@launch
                             }
                             totalCount=Json.parseToJsonElement(res).jsonObject["total_count"]?.jsonPrimitive?.int ?: 0
                             val requestStart=Json.parseToJsonElement(res).jsonObject["start"]?.jsonPrimitive?.long ?: 0
-                            println("${LocalDateTime.now()} caught response start=$requestStart | $totalCount")
+                            println("${LocalDateTime.now()}  caught response start=$requestStart | $totalCount")
                             val results = Json.parseToJsonElement(res).jsonObject["results"]?.jsonArray ?: buildJsonArray {}
                             for(i in 0..<results.size){
                                 val item = results.get(i).jsonObject ?: break
@@ -88,7 +91,9 @@ class ParserComponent(
                                     marketTradableRestriction = asset_description["market_tradable_restriction"]?.jsonPrimitive?.long,
                                 )
                                 entity.id = dao.findByHashName(entity.hashName)?.id ?: 0
-                                dao.save(entity)
+                                launch {
+                                    dao.save(entity)
+                                }
                             }
                         }
                         oldestUpdatedId += 100
@@ -98,7 +103,7 @@ class ParserComponent(
                     }
                 }
                 request.join()
-                println("${LocalDateTime.now()} waiting for 60 seconds ...")
+                println("${LocalDateTime.now()}  waiting for 60 seconds ...")
                 Thread.sleep(60000)
             }
         }
